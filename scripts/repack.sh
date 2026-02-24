@@ -36,6 +36,6 @@ step_repack() {
 
     cd "$SCRIPT_DIR"
 
-    # Dọn build
-    rm -rf "$WORK_DIR"
+    # Dọn working dirs (giữ cache)
+    rm -rf "$WORK_DIR/squashfs" "$WORK_DIR/custom" "$WORK_DIR/mnt"
 }

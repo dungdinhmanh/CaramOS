@@ -47,11 +47,18 @@ locale-gen
 echo "[CaramOS] Installing Be Vietnam Pro font..."
 mkdir -p /usr/share/fonts/truetype/be-vietnam-pro
 wget -q -O /tmp/be-vietnam-pro.zip \
+    "https://github.com/bettergui/BeVietnamPro/archive/refs/heads/master.zip" 2>/dev/null || \
+wget -q -O /tmp/be-vietnam-pro.zip \
     "https://fonts.google.com/download?family=Be+Vietnam+Pro" 2>/dev/null || true
-if [ -f /tmp/be-vietnam-pro.zip ]; then
-    unzip -qo /tmp/be-vietnam-pro.zip -d /usr/share/fonts/truetype/be-vietnam-pro/
-    rm -f /tmp/be-vietnam-pro.zip
+if [ -f /tmp/be-vietnam-pro.zip ] && file /tmp/be-vietnam-pro.zip | grep -q "Zip"; then
+    unzip -qo /tmp/be-vietnam-pro.zip -d /tmp/be-vietnam-pro-extract/
+    find /tmp/be-vietnam-pro-extract/ -name "*.ttf" -exec cp {} /usr/share/fonts/truetype/be-vietnam-pro/ \;
+    rm -rf /tmp/be-vietnam-pro.zip /tmp/be-vietnam-pro-extract
     fc-cache -f
+    echo "[CaramOS] Font installed."
+else
+    echo "[CaramOS] Font download failed, skipping."
+    rm -f /tmp/be-vietnam-pro.zip
 fi
 
 echo "[CaramOS] Compiling schemas..."
