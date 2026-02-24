@@ -17,6 +17,11 @@ source "$SCRIPT_DIR/scripts/utils.sh"
 # --- Clean ---
 if [ "${1}" = "--clean" ]; then
     info "Dọn dẹp build..."
+    umount -lf "$WORK_DIR/squashfs/proc"    2>/dev/null || true
+    umount -lf "$WORK_DIR/squashfs/sys"     2>/dev/null || true
+    umount -lf "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || true
+    umount -lf "$WORK_DIR/squashfs/dev"     2>/dev/null || true
+    umount -lf "$WORK_DIR/mnt"              2>/dev/null || true
     rm -rf "$WORK_DIR" *.iso *.log
     ok "Đã dọn xong."
     exit 0
