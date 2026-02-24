@@ -5,9 +5,9 @@ step_repack() {
     info "[7/7] Đóng gói ISO..."
 
     # Rebuild squashfs
-    info "  → Tạo filesystem.squashfs (5-10 phút)..."
+    info "  → Tạo filesystem.squashfs (${SQUASHFS_COMP})..."
     mksquashfs "$WORK_DIR/squashfs" "$WORK_DIR/custom/casper/filesystem.squashfs" \
-        -comp xz -b 1M -Xdict-size 100% -noappend
+        -comp $SQUASHFS_COMP $SQUASHFS_OPTS
     ok "squashfs xong."
 
     # Cập nhật filesystem.size
