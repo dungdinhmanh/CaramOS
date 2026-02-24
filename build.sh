@@ -22,8 +22,8 @@ if [ "${1}" = "--clean" ]; then
     umount -lf "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || true
     umount -lf "$WORK_DIR/squashfs/dev"     2>/dev/null || true
     umount -lf "$WORK_DIR/mnt"              2>/dev/null || true
-    rm -rf "$WORK_DIR" *.iso *.log
-    ok "Đã dọn xong."
+    rm -rf "$WORK_DIR" CaramOS-*.iso *.log
+    ok "Đã dọn xong. (Mint ISO giữ lại)"
     exit 0
 fi
 
