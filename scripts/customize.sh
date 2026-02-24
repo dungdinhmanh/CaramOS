@@ -55,8 +55,5 @@ step_customize() {
         rm -f /etc/resolv.conf
     '
 
-    umount "$WORK_DIR/squashfs/proc"    2>/dev/null || true
-    umount "$WORK_DIR/squashfs/sys"     2>/dev/null || true
-    umount "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || true
-    umount "$WORK_DIR/squashfs/dev"     2>/dev/null || true
+    umount -Rlf "$WORK_DIR/squashfs" 2>/dev/null || true
 }
