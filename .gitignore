@@ -1,0 +1,19 @@
+*.pyc
+__pycache__/
+*.deb
+*.buildinfo
+*.changes
+*.tar.*
+.DS_Store
+
+# live-build artifacts
+.build/
+binary/
+cache/
+chroot/
+*.iso
+*.img
+*.log
+*.contents
+*.files
+*.packages

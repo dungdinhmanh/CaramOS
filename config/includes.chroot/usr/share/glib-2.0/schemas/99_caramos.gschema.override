@@ -1,0 +1,50 @@
+# CaramOS - System-wide Cinnamon defaults
+# Applied to all users, users can override in Settings
+
+[org.cinnamon.desktop.interface]
+gtk-theme='ChromeOS-Light'
+icon-theme='Tela-circle'
+cursor-theme='Bibata-Modern-Classic'
+font-name='Be Vietnam Pro 10'
+clock-show-date=true
+clock-use-24h=true
+
+[org.cinnamon.desktop.wm.preferences]
+titlebar-font='Be Vietnam Pro Bold 10'
+
+[org.cinnamon.desktop.background]
+picture-uri='file:///usr/share/backgrounds/caramos/default.png'
+picture-options='zoom'
+
+[org.nemo.desktop]
+computer-icon-visible=false
+home-icon-visible=true
+trash-icon-visible=true
+network-icon-visible=false
+volumes-visible=true
+
+[org.cinnamon.desktop.peripherals.touchpad]
+tap-to-click=true
+natural-scroll=true
+two-finger-scrolling=true
+
+[org.cinnamon.settings-daemon.plugins.power]
+sleep-inactive-ac-timeout=0
+sleep-inactive-battery-timeout=900
+lid-close-ac-action='nothing'
+lid-close-battery-action='suspend'
+
+[org.cinnamon.settings-daemon.plugins.color]
+night-light-enabled=true
+night-light-schedule-automatic=true
+
+[org.cinnamon.desktop.screensaver]
+lock-enabled=true
+lock-delay=uint32 300
+
+[org.nemo.preferences]
+show-hidden-files=false
+default-folder-viewer='icon-view'
+
+[org.cinnamon.desktop.default-applications.terminal]
+exec='gnome-terminal'

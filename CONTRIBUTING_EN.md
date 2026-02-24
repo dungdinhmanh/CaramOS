@@ -1,6 +1,6 @@
 # Contributing Guide — CaramOS
 
-Thank you for your interest in CaramOS! This document describes the development workflow, code standards, and how to contribute to the project.
+Thank you for your interest in CaramOS! This document describes the project architecture, how to build the ISO, development workflow, and how to contribute.
 
 > [Tiếng Việt](CONTRIBUTING.md) · [README](README_EN.md)
 
@@ -8,23 +8,134 @@ Thank you for your interest in CaramOS! This document describes the development 
 
 ## Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
+- [Project Architecture](#project-architecture)
+- [Build ISO](#build-iso)
 - [How to Contribute](#how-to-contribute)
 - [Development Workflow](#development-workflow)
-- [Language Standards](#language-standards)
-- [Bug Reports](#bug-reports)
-- [Feature Requests](#feature-requests)
+- [Code Standards](#code-standards)
+- [Bug Reports & Feature Requests](#bug-reports--feature-requests)
 
 ---
 
-## Code of Conduct
+## Project Architecture
 
-See [CODE_OF_CONDUCT_EN.md](CODE_OF_CONDUCT_EN.md). In short:
+CaramOS = **Ubuntu base** + **Linux Mint tools** + **CaramOS customization**.
 
-- Respect all members
-- No discrimination
-- Focus on building, not destroying
-- Give constructive feedback
+```
+Ubuntu archive (kernel, systemd, libs)
+     ↓
++ Linux Mint repo (mintupdate, nemo, cinnamon, timeshift...)
+     ↓
++ CaramOS hooks (Chrome, ChromeOS theme, Vietnamese localization...)
+     ↓
+= CaramOS ISO
+```
+
+### Directory Structure
+
+```
+CaramOS/
+├── auto/                                  # live-build auto scripts
+│   ├── config                             # Build config (base, arch, mirror, Secure Boot)
+│   ├── build                              # lb build + logging
+│   └── clean                              # lb clean
+│
+├── config/
+│   ├── archives/                          # Additional APT repos
+│   │   ├── linuxmint.list.chroot          # Linux Mint repo (Wilma)
+│   │   └── linuxmint.list.binary
+│   ├── package-lists/
+│   │   └── caramos.list.chroot            # Packages to install
+│   ├── packages.chroot/                   # Local .deb files to install
+│   ├── hooks/live/                        # Scripts run in chroot during build
+│   │   ├── 0050-mint-base.hook.chroot     # Import Mint key + install Mint tools
+│   │   └── 0100-caramos-setup.hook.chroot # Chrome, theme, icons, cursor, locale
+│   ├── includes.chroot/                   # Overlay → / of the ISO
+│   │   ├── etc/sddm.conf.d/              # SDDM login screen
+│   │   ├── etc/skel/.config/              # Default user config
+│   │   │   ├── cinnamon/                  # Chrome OS panel layout
+│   │   │   ├── fcitx5/                    # Vietnamese input method
+│   │   │   ├── autostart/                 # Flameshot screenshot
+│   │   │   └── mimeapps.list              # Chrome as default browser
+│   │   └── usr/share/
+│   │       ├── glib-2.0/schemas/          # Dconf (theme, icon, font...)
+│   │       ├── backgrounds/caramos/       # Wallpapers
+│   │       └── pixmaps/                   # Logo
+│   ├── includes.binary/                   # Files on ISO (outside filesystem)
+│   └── preseed/                           # Auto-answer installer
+│
+├── debian/                                # Debian packaging → .deb
+│   ├── control, changelog, rules
+│   ├── install                            # File mapping
+│   └── postinst                           # Post-install hook
+│
+├── Makefile                               # make build / clean / deb
+└── README.md, CONTRIBUTING.md, LICENSE
+```
+
+### Hook Scripts — Execution Order
+
+| Hook | Runs after | What it does |
+|---|---|---|
+| `0050-mint-base` | Bootstrap | Import Mint GPG key, `apt-get update`, install mintupdate, mintsystem, timeshift, warpinator... |
+| `0100-caramos-setup` | 0050 | Install Chrome .deb, ChromeOS theme, Tela icons, Bibata cursor, remove bloat, set Vietnamese locale, install Be Vietnam Pro font |
+
+### Config Overlay — What Goes Where
+
+| In repo | Destination on ISO |
+|---|---|
+| `config/includes.chroot/etc/sddm.conf.d/` | `/etc/sddm.conf.d/` |
+| `config/includes.chroot/etc/skel/` | `/etc/skel/` |
+| `config/includes.chroot/usr/share/glib-2.0/schemas/` | `/usr/share/glib-2.0/schemas/` |
+| `config/includes.chroot/usr/share/backgrounds/` | `/usr/share/backgrounds/` |
+
+---
+
+## Build ISO
+
+### Requirements
+
+- Machine running **Ubuntu 22.04+** or **Linux Mint 21+**
+- About **10 GB** free disk space
+- Internet connection
+
+### Build Commands
+
+```bash
+# 1. Install tools (first time only)
+sudo apt install live-build debootstrap git
+
+# 2. Clone the repo
+git clone https://github.com/VN-Linux-Family/CaramOS.git
+cd CaramOS
+
+# 3. Build ISO (single command, fully automated)
+make build
+```
+
+Wait **15-30 minutes** → `.iso` file is created → write to USB → boot.
+
+### Build .deb Settings Package
+
+```bash
+make deb    # → caramos-default-settings.deb
+```
+
+### Write to USB
+
+```bash
+sudo dd if=*.iso of=/dev/sdX bs=4M status=progress
+# Or use Balena Etcher (GUI)
+```
+
+### Test in VM
+
+```bash
+# QEMU
+qemu-system-x86_64 -m 4G -cdrom *.iso -boot d -enable-kvm
+
+# Or use VirtualBox / GNOME Boxes
+```
 
 ---
 
@@ -36,11 +147,10 @@ See [CODE_OF_CONDUCT_EN.md](CODE_OF_CONDUCT_EN.md). In short:
 |---|---|---|
 | **Tester** | Test ISO on different hardware, report bugs | A computer to test on |
 | **Designer** | Wallpapers, icons, themes, branding | Graphic design skills |
-| **Developer** | Scripts, Caram Center, Welcome App | Python, Bash, GTK |
+| **Developer** | Scripts, hooks, configs | Bash, live-build knowledge |
 | **Writer** | Documentation, translations | Good Vietnamese/English writing |
-| **Packager** | Package apps, write YAML configs for Caram Center | Wine/Bottles/Flatpak knowledge |
 
-### Contribution workflow
+### Contribution Workflow
 
 1. **Fork** the repo to your GitHub account
 2. **Clone** to your machine:
@@ -48,183 +158,89 @@ See [CODE_OF_CONDUCT_EN.md](CODE_OF_CONDUCT_EN.md). In short:
    git clone https://github.com/<your-username>/CaramOS.git
    cd CaramOS
    ```
-3. **Create a new branch** from `main`:
+3. **Create a new branch**:
    ```bash
    git checkout -b feature/feature-name
    ```
 4. **Code** and commit:
    ```bash
-   git add .
    git commit -m "feat: short description"
    ```
-5. **Push** to your fork:
-   ```bash
-   git push origin feature/feature-name
-   ```
-6. Create a **Pull Request** on GitHub
+5. **Push** and create a **Pull Request**
 
-### Pull Request rules
+### Pull Request Rules
 
 - 1 PR = 1 feature or 1 bug fix
 - Clearly describe what the PR does and why
 - Make sure you've tested before creating the PR
-- If the PR involves UI changes, attach screenshots
 - Wait for at least 1 reviewer to approve
 
 ---
 
 ## Development Workflow
 
-### Branch strategy
+### Branch Strategy
 
 ```
-main            <- Stable, used for building release ISOs
-├── develop     <- Main development branch, merge features here
-├── feature/*   <- New features (feature/caram-center, feature/ai-assistant)
-├── fix/*       <- Bug fixes (fix/wifi-driver, fix/locale-bug)
-└── release/*   <- Release prep (release/0.1-beta, release/1.0)
+main            ← Stable, used for building release ISOs
+├── develop     ← Main development branch
+├── feature/*   ← New features
+├── fix/*       ← Bug fixes
+└── release/*   ← Release preparation
 ```
 
-### Release process
-
-```
-1. Develop on develop branch
-2. When enough features are ready -> create release/x.y branch
-3. Thorough testing on release branch
-4. Merge into main -> tag version -> build ISO -> publish
-```
-
-### Versioning
-
-We use **Semantic Versioning**:
+### Versioning — Semantic Versioning
 
 ```
 CaramOS X.Y.Z
+X = Major   Y = Minor   Z = Patch
 
-X = Major  — large changes, may not be backwards compatible
-Y = Minor  — new features, backwards compatible
-Z = Patch  — bug fixes
-
-Examples:
-  0.1.0  — First beta
-  0.2.0  — Add Caram Center GUI
-  1.0.0  — Official release
-  1.0.1  — Fix WiFi driver bug
-  1.1.0  — Add offline AI
+0.1.0  — First beta
+1.0.0  — Official release
 ```
 
 ---
 
-## Language Standards
+## Code Standards
 
-### Commit messages
-
-Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+### Commit Messages — [Conventional Commits](https://www.conventionalcommits.org/)
 
 ```
-<type>: <short description>
-
-type:
-  feat     — new feature
-  fix      — bug fix
-  docs     — documentation
-  style    — code formatting (no logic changes)
-  refactor — code restructuring
-  test     — add/fix tests
-  chore    — miscellaneous (build, config, CI)
-  brand    — branding (wallpaper, logo, theme)
-
-Examples:
-  feat: add Caram Center GUI
-  fix: fcitx5-lotus not enabled by default
-  docs: add dual-boot installation guide
-  brand: update default wallpaper
+feat:     new feature
+fix:      bug fix
+docs:     documentation
+chore:    build, config, CI
+brand:    wallpaper, logo, theme
 ```
 
-### Language usage in code
+### Language Usage
 
-| Context | Language | Example |
-|---|---|---|
-| **Variable, function, class names** | English | `def install_package()` |
-| **Code comments** | English | `# Check if driver is installed` |
-| **Commit messages** | English or Vietnamese | `feat: add Caram Center` |
-| **Issues, PRs** | Vietnamese or English | Up to the author |
-| **User documentation** | Vietnamese (primary) | Installation guide |
-| **README** | Vietnamese (primary) + English | Separate files |
-| **UI/interface** | Vietnamese | "Cai dat", "Cap nhat" |
+| Context | Language |
+|---|---|
+| Variable, function names, comments | English |
+| Commits, Issues, PRs | Vietnamese or English |
+| UI, user documentation | Vietnamese |
 
-### Python (Caram Center, Welcome App)
-
-- Python 3.10+
-- GUI: GTK 4 or GTK 3 (via PyGObject)
-- Formatter: [Black](https://github.com/psf/black) (line length 88)
-- Linter: flake8
-- File names: `snake_case.py`
-- Class names: `PascalCase`
-- Function/variable names: `snake_case`
-
-```python
-# Example
-class CaramCenter:
-    """Main application for managing Windows app installation."""
-
-    def install_app(self, app_name: str) -> bool:
-        """Install a Windows application via Bottles or Webapp Manager."""
-        config = self._load_app_config(app_name)
-        ...
-```
-
-### Bash (build scripts)
-
-- Shebang: `#!/bin/bash`
-- Use `set -euo pipefail` at the top
-- File names: `kebab-case.sh`
-- Comment each block of commands
+### Bash (hook scripts)
 
 ```bash
 #!/bin/bash
-set -euo pipefail
+set -e
 
-# Install Vietnamese input method
-apt install -y fcitx5-lotus
-
-# Set Vietnamese locale as default
-sed -i 's/en_US.UTF-8/vi_VN.UTF-8/' /etc/default/locale
-```
-
-### YAML (Caram Center app configs)
-
-```yaml
-# Example: apps/zalo.yaml
-name: Zalo
-description: Popular messaging app in Vietnam
-method: webapp              # webapp | bottles | snap | flatpak
-url: https://chat.zalo.me   # Only for method: webapp
-icon: zalo.png
-category: communication
+# Comment explaining each block
+echo "[CaramOS] Installing..."
+apt-get install -y package-name
 ```
 
 ---
 
-## Bug Reports
+## Bug Reports & Feature Requests
 
-Create an Issue at [GitHub Issues](https://github.com/VN-Linux-Family/CaramOS/issues) with:
+Create an [Issue on GitHub](https://github.com/VN-Linux-Family/CaramOS/issues):
 
-1. **Bug description** — What happened?
-2. **Steps to reproduce** — How to trigger the bug?
-3. **Expected result** — What should have happened?
-4. **System info** — CaramOS version, hardware (CPU, GPU, WiFi chip)
-5. **Screenshots/logs** — If available
+**Bug report:** Description → Steps to reproduce → Expected result → System info → Logs/screenshots
 
----
-
-## Feature Requests
-
-Create an Issue with the `feature-request` label:
-
-1. **Feature description** — What do you want?
-2. **Reason** — Why is this feature needed?
-3. **Proposed solution** — How do you imagine it working?
+**Feature request:** Description → Reason → Proposed solution
 
 ---
 

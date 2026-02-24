@@ -1,30 +1,141 @@
 # Hướng dẫn đóng góp — CaramOS
 
-Cảm ơn bạn đã quan tâm đến CaramOS! Tài liệu này mô tả quy trình phát triển, tiêu chuẩn code, và cách đóng góp vào dự án.
+Cảm ơn bạn đã quan tâm đến CaramOS! Tài liệu này mô tả kiến trúc dự án, cách build ISO, quy trình phát triển, và cách đóng góp.
 
-> [README tiếng Việt](README.md) · [English README](README_EN.md)
+> [README tiếng Việt](README.md) · [English](CONTRIBUTING_EN.md)
 
 ---
 
 ## Mục lục
 
-- [Quy tắc ứng xử](#quy-tắc-ứng-xử)
+- [Kiến trúc dự án](#kiến-trúc-dự-án)
+- [Build ISO](#build-iso)
 - [Cách đóng góp](#cách-đóng-góp)
 - [Quy trình phát triển](#quy-trình-phát-triển)
-- [Tiêu chuẩn ngôn ngữ](#tiêu-chuẩn-ngôn-ngữ)
-- [Báo lỗi](#báo-lỗi)
-- [Đề xuất tính năng](#đề-xuất-tính-năng)
+- [Tiêu chuẩn code](#tiêu-chuẩn-code)
+- [Báo lỗi & đề xuất](#báo-lỗi--đề-xuất)
 
 ---
 
-## Quy tắc ứng xử
+## Kiến trúc dự án
 
-Xem [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Tóm lại:
+CaramOS = **Ubuntu base** + **Linux Mint tools** + **CaramOS customization**.
 
-- Tôn trọng mọi thành viên
-- Không phân biệt đối xử
-- Tập trung vào xây dựng, không phá hoại
-- Phản hồi mang tính xây dựng
+```
+Ubuntu archive (kernel, systemd, libs)
+     ↓
++ Linux Mint repo (mintupdate, nemo, cinnamon, timeshift...)
+     ↓
++ CaramOS hooks (Chrome, ChromeOS theme, Việt hoá...)
+     ↓
+= CaramOS ISO
+```
+
+### Cấu trúc thư mục
+
+```
+CaramOS/
+├── auto/                                  # live-build auto scripts
+│   ├── config                             # Cấu hình build (base, arch, mirror, Secure Boot)
+│   ├── build                              # lb build + logging
+│   └── clean                              # lb clean
+│
+├── config/
+│   ├── archives/                          # APT repos bổ sung
+│   │   ├── linuxmint.list.chroot          # Repo Linux Mint (Wilma)
+│   │   └── linuxmint.list.binary
+│   ├── package-lists/
+│   │   └── caramos.list.chroot            # Package cài vào ISO
+│   ├── packages.chroot/                   # File .deb local để cài
+│   ├── hooks/live/                        # Script chạy trong chroot khi build
+│   │   ├── 0050-mint-base.hook.chroot     # Import Mint key + cài Mint tools
+│   │   └── 0100-caramos-setup.hook.chroot # Chrome, theme, icon, cursor, locale
+│   ├── includes.chroot/                   # Overlay → / của ISO
+│   │   ├── etc/sddm.conf.d/              # SDDM login screen
+│   │   ├── etc/skel/.config/              # Config mặc định user mới
+│   │   │   ├── cinnamon/                  # Panel layout Chrome OS
+│   │   │   ├── fcitx5/                    # Bộ gõ tiếng Việt
+│   │   │   ├── autostart/                 # Flameshot screenshot
+│   │   │   └── mimeapps.list              # Chrome mặc định
+│   │   └── usr/share/
+│   │       ├── glib-2.0/schemas/          # Dconf (theme, icon, font...)
+│   │       ├── backgrounds/caramos/       # Hình nền
+│   │       └── pixmaps/                   # Logo
+│   ├── includes.binary/                   # File trên ISO (ngoài filesystem)
+│   └── preseed/                           # Auto-answer installer
+│
+├── debian/                                # Debian packaging → .deb
+│   ├── control, changelog, rules
+│   ├── install                            # File mapping
+│   └── postinst                           # Post-install hook
+│
+├── Makefile                               # make build / clean / deb
+└── README.md, CONTRIBUTING.md, LICENSE
+```
+
+### Hook scripts — Trình tự chạy
+
+| Hook | Chạy khi | Làm gì |
+|---|---|---|
+| `0050-mint-base` | Sau bootstrap | Import Mint GPG key, `apt-get update`, cài mintupdate, mintsystem, timeshift, warpinator... |
+| `0100-caramos-setup` | Sau 0050 | Cài Chrome .deb, ChromeOS theme, Tela icon, Bibata cursor, gỡ bloat, set locale VI, cài font Be Vietnam Pro |
+
+### Config overlay — File nào đi đâu
+
+| Trong repo | Đích trên ISO |
+|---|---|
+| `config/includes.chroot/etc/sddm.conf.d/` | `/etc/sddm.conf.d/` |
+| `config/includes.chroot/etc/skel/` | `/etc/skel/` |
+| `config/includes.chroot/usr/share/glib-2.0/schemas/` | `/usr/share/glib-2.0/schemas/` |
+| `config/includes.chroot/usr/share/backgrounds/` | `/usr/share/backgrounds/` |
+
+---
+
+## Build ISO
+
+### Yêu cầu
+
+- Máy chạy **Ubuntu 22.04+** hoặc **Linux Mint 21+**
+- Khoảng **10 GB** dung lượng trống
+- Kết nối internet
+
+### Lệnh build
+
+```bash
+# 1. Cài công cụ (lần đầu)
+sudo apt install live-build debootstrap git
+
+# 2. Clone repo
+git clone https://github.com/VN-Linux-Family/CaramOS.git
+cd CaramOS
+
+# 3. Build ISO (1 lệnh duy nhất)
+make build
+```
+
+Chờ **15-30 phút** → ra file `.iso` → ghi USB → boot.
+
+### Build .deb settings package
+
+```bash
+make deb    # → caramos-default-settings.deb
+```
+
+### Ghi USB
+
+```bash
+sudo dd if=*.iso of=/dev/sdX bs=4M status=progress
+# Hoặc dùng Balena Etcher (GUI)
+```
+
+### Test trong VM
+
+```bash
+# QEMU
+qemu-system-x86_64 -m 4G -cdrom *.iso -boot d -enable-kvm
+
+# Hoặc dùng VirtualBox / GNOME Boxes
+```
 
 ---
 
@@ -36,40 +147,33 @@ Xem [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Tóm lại:
 |---|---|---|
 | **Tester** | Test ISO trên nhiều loại máy, báo lỗi | Có máy tính để test |
 | **Designer** | Wallpaper, icon, theme, branding | Biết thiết kế đồ hoạ |
-| **Developer** | Viết script, Caram Center, Welcome App | Python, Bash, GTK |
+| **Developer** | Script, hook, config | Bash, biết live-build |
 | **Writer** | Tài liệu hướng dẫn, dịch thuật | Viết tiếng Việt/Anh tốt |
-| **Packager** | Đóng gói app, viết YAML cho Caram Center | Biết Wine/Bottles/Flatpak |
 
 ### Quy trình đóng góp code
 
-1. **Fork** repo về tài khoản GitHub của bạn
+1. **Fork** repo về tài khoản GitHub
 2. **Clone** về máy:
    ```bash
    git clone https://github.com/<your-username>/CaramOS.git
    cd CaramOS
    ```
-3. **Tạo branch** mới từ `main`:
+3. **Tạo branch** mới:
    ```bash
    git checkout -b feature/ten-tinh-nang
    ```
 4. **Code** và commit:
    ```bash
-   git add .
    git commit -m "feat: mô tả ngắn gọn"
    ```
-5. **Push** lên fork:
-   ```bash
-   git push origin feature/ten-tinh-nang
-   ```
-6. Tạo **Pull Request** trên GitHub
+5. **Push** và tạo **Pull Request**
 
 ### Quy tắc Pull Request
 
 - 1 PR = 1 tính năng hoặc 1 bug fix
 - Mô tả rõ PR làm gì và tại sao
 - Đảm bảo đã test trước khi tạo PR
-- Nếu PR liên quan đến UI, đính kèm ảnh chụp màn hình
-- Chờ ít nhất 1 người review và approve
+- Chờ ít nhất 1 người review
 
 ---
 
@@ -78,153 +182,65 @@ Xem [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Tóm lại:
 ### Branch strategy
 
 ```
-main            ← Bản ổn định, dùng để build ISO phát hành
-├── develop     ← Nhánh phát triển chính, merge feature vào đây
-├── feature/*   ← Tính năng mới (feature/caram-center, feature/ai-assistant)
-├── fix/*       ← Sửa lỗi (fix/wifi-driver, fix/locale-bug)
-└── release/*   ← Chuẩn bị phát hành (release/0.1-beta, release/1.0)
+main            ← Bản ổn định, build ISO phát hành
+├── develop     ← Nhánh phát triển chính
+├── feature/*   ← Tính năng mới
+├── fix/*       ← Sửa lỗi
+└── release/*   ← Chuẩn bị phát hành
 ```
 
-### Quy trình release
-
-```
-1. Phát triển trên develop
-2. Khi đủ tính năng → tạo branch release/x.y
-3. Test kỹ trên release branch
-4. Merge vào main → tag version → build ISO → phát hành
-```
-
-### Versioning
-
-Dùng **Semantic Versioning**:
+### Versioning — Semantic Versioning
 
 ```
 CaramOS X.Y.Z
+X = Major   Y = Minor   Z = Patch
 
-X = Major  — thay đổi lớn, có thể không tương thích ngược
-Y = Minor  — tính năng mới, tương thích ngược
-Z = Patch  — sửa lỗi
-
-Ví dụ:
-  0.1.0  — Beta đầu tiên
-  0.2.0  — Thêm Caram Center GUI
-  1.0.0  — Phát hành chính thức
-  1.0.1  — Sửa lỗi WiFi driver
-  1.1.0  — Thêm AI offline
+0.1.0  — Beta đầu tiên
+1.0.0  — Phát hành chính thức
 ```
 
 ---
 
-## Tiêu chuẩn ngôn ngữ
+## Tiêu chuẩn code
 
-### Commit message
-
-Dùng format [Conventional Commits](https://www.conventionalcommits.org/):
+### Commit message — [Conventional Commits](https://www.conventionalcommits.org/)
 
 ```
-<type>: <mô tả ngắn gọn>
-
-type:
-  feat     — tính năng mới
-  fix      — sửa lỗi
-  docs     — tài liệu
-  style    — format code (không ảnh hưởng logic)
-  refactor — tái cấu trúc code
-  test     — thêm/sửa test
-  chore    — việc lặt vặt (build, config, CI)
-  brand    — branding (wallpaper, logo, theme)
-
-Ví dụ:
-  feat: thêm Caram Center GUI
-  fix: sửa lỗi bộ gõ fcitx5-lotus không bật mặc định
-  docs: thêm hướng dẫn cài đặt dual-boot
-  brand: cập nhật wallpaper mặc định
+feat:     tính năng mới
+fix:      sửa lỗi
+docs:     tài liệu
+chore:    build, config, CI
+brand:    wallpaper, logo, theme
 ```
 
-### Ngôn ngữ trong code
+### Ngôn ngữ
 
-| Ngữ cảnh | Ngôn ngữ | Ví dụ |
-|---|---|---|
-| **Tên biến, hàm, class** | Tiếng Anh | `def install_package()` |
-| **Comment trong code** | Tiếng Anh | `# Check if driver is installed` |
-| **Commit message** | Tiếng Anh hoặc Việt | `feat: thêm Caram Center` |
-| **Issue, PR** | Tiếng Việt hoặc Anh | Tuỳ người viết |
-| **Tài liệu user** | Tiếng Việt (chính) | Hướng dẫn cài đặt |
-| **README** | Tiếng Việt (chính) + Anh | 2 file riêng |
-| **UI/giao diện** | Tiếng Việt | "Cài đặt", "Cập nhật" |
+| Ngữ cảnh | Ngôn ngữ |
+|---|---|
+| Tên biến, hàm, comment | Tiếng Anh |
+| Commit, Issue, PR | Tiếng Việt hoặc Anh |
+| UI, tài liệu user | Tiếng Việt |
 
-### Python (Caram Center, Welcome App)
-
-- Python 3.10+
-- GUI: GTK 4 hoặc GTK 3 (qua PyGObject)
-- Format: dùng [Black](https://github.com/psf/black) (line length 88)
-- Linter: flake8
-- Đặt tên file: `snake_case.py`
-- Đặt tên class: `PascalCase`
-- Đặt tên hàm/biến: `snake_case`
-
-```python
-# Ví dụ chuẩn
-class CaramCenter:
-    """Main application for managing Windows app installation."""
-
-    def install_app(self, app_name: str) -> bool:
-        """Install a Windows application via Bottles or Webapp Manager."""
-        config = self._load_app_config(app_name)
-        ...
-```
-
-### Bash (build scripts)
-
-- Shebang: `#!/bin/bash`
-- Dùng `set -euo pipefail` ở đầu file
-- Đặt tên file: `kebab-case.sh`
-- Comment giải thích mỗi block lệnh
+### Bash (hook scripts)
 
 ```bash
 #!/bin/bash
-set -euo pipefail
+set -e
 
-# Install Vietnamese input method
-apt install -y fcitx5-lotus
-
-# Set Vietnamese locale as default
-sed -i 's/en_US.UTF-8/vi_VN.UTF-8/' /etc/default/locale
-```
-
-### YAML (Caram Center app configs)
-
-```yaml
-# Ví dụ: apps/zalo.yaml
-name: Zalo
-description: Ứng dụng nhắn tin phổ biến tại Việt Nam
-method: webapp              # webapp | bottles | snap | flatpak
-url: https://chat.zalo.me   # Chỉ cho method: webapp
-icon: zalo.png
-category: communication
+# Comment giải thích mỗi block
+echo "[CaramOS] Installing..."
+apt-get install -y package-name
 ```
 
 ---
 
-## Báo lỗi
+## Báo lỗi & đề xuất
 
-Tạo Issue tại [GitHub Issues](https://github.com/VN-Linux-Family/CaramOS/issues) với thông tin:
+Tạo [Issue trên GitHub](https://github.com/VN-Linux-Family/CaramOS/issues):
 
-1. **Mô tả lỗi** — Chuyện gì xảy ra?
-2. **Cách tái hiện** — Làm gì để gặp lỗi?
-3. **Kết quả mong đợi** — Đáng lẽ phải thế nào?
-4. **Thông tin hệ thống** — Phiên bản CaramOS, phần cứng (CPU, GPU, WiFi chip)
-5. **Ảnh chụp/log** — Nếu có
+**Báo lỗi:** Mô tả lỗi → Cách tái hiện → Kết quả mong đợi → Thông tin hệ thống → Log/ảnh
 
----
-
-## Đề xuất tính năng
-
-Tạo Issue với label `feature-request`:
-
-1. **Mô tả tính năng** — Bạn muốn gì?
-2. **Lý do** — Tại sao tính năng này cần thiết?
-3. **Giải pháp đề xuất** — Bạn hình dung nó hoạt động thế nào?
+**Đề xuất tính năng:** Mô tả → Lý do → Giải pháp đề xuất
 
 ---
 

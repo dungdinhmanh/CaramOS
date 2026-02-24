@@ -1,6 +1,5 @@
-<p align="center">
-  <img src="branding/logo.png" alt="CaramOS Logo" width="120">
-</p>
+<!-- Logo: thêm sau khi thiết kế xong -->
+<!-- <p align="center"><img src="branding/logo.png" alt="CaramOS Logo" width="120"></p> -->
 
 <h1 align="center">CaramOS</h1>
 
@@ -16,6 +15,10 @@
   <a href="README_EN.md">English</a> · <a href="https://vietnamlinuxfamily.net">VNLF</a> · <a href="https://caramos.vietnamlinuxfamily.net">Website</a>
 </p>
 
+<p align="center">
+  Phát triển bởi: <a href="https://www.facebook.com/groups/vietnamlinuxcommunity">VNLF</a> · <a href="https://www.facebook.com/mrd.900s/">MRD</a> · <a href="https://www.facebook.com/tam.nguyet.that">Kỳ Nguyễn</a>
+</p>
+
 ---
 
 ### CaramOS là gì?
@@ -28,10 +31,9 @@
 
 | Tính năng | Mô tả |
 |---|---|
-| **Giao diện Chrome OS** | Sạch sẽ, hiện đại, icon tròn, launcher grid — đẹp ngay từ lần đầu |
-| **Caram Center** | 1 ứng dụng duy nhất để cài Zalo, Photoshop, Office, game Windows |
-| **Việt hoá 100%** | Tiếng Việt mặc định, bộ gõ fcitx5-lotus cài sẵn, font Việt đẹp |
-| **AI Offline** | Trợ lý AI chạy hoàn toàn offline — chat, dịch, tóm tắt, sửa chính tả |
+| **Giao diện Chrome OS** | Sạch sẽ, hiện đại, icon tròn — đẹp ngay từ lần đầu |
+| **Việt hoá 100%** | Tiếng Việt mặc định, bộ gõ fcitx5 cài sẵn, font Việt đẹp |
+| **Google Chrome** | Trình duyệt quen thuộc, cài sẵn |
 | **Cập nhật an toàn** | mintupdate phân loại mức độ rủi ro — không bao giờ tự update hỏng máy |
 | **Backup 1 click** | Timeshift tạo snapshot — hỏng máy thì khôi phục trong 2 phút |
 | **Driver tự động** | Tự phát hiện và cài driver WiFi, GPU (NVIDIA/AMD/Intel) |
@@ -69,47 +71,42 @@ sudo dd if=CaramOS.iso of=/dev/sdX bs=4M status=progress
 3. Chọn **"Cài đặt CaramOS"**
 4. Làm theo hướng dẫn trên màn hình (hoàn toàn tiếng Việt)
 
-### Caram Center — Cài app Windows dễ dàng
+<!-- Caram Center — Phase 2 -->
 
-Caram Center là ứng dụng độc quyền của CaramOS, giúp cài phần mềm Windows chỉ với vài click:
+### Công nghệ sử dụng
 
+| Thành phần | Công nghệ |
+|---|---|
+| **Base** | [Linux Mint 22](https://linuxmint.com/) (Ubuntu 24.04 LTS) |
+| **Desktop** | [Cinnamon](https://github.com/linuxmint/cinnamon) |
+| **Login** | [SDDM](https://github.com/sddm/sddm) |
+| **Build** | [live-build](https://live-team.pages.debian.net/live-manual/) — `make build` → ISO |
+| **Theme** | [ChromeOS-theme](https://github.com/vinceliuice/ChromeOS-theme) + [Tela Circle](https://github.com/vinceliuice/Tela-circle-icon-theme) + [Bibata](https://github.com/ful1e5/Bibata_Cursor) |
+| **Font** | [Be Vietnam Pro](https://fonts.google.com/specimen/Be+Vietnam+Pro) |
+| **Browser** | Google Chrome (cài sẵn) |
+| **Input** | [fcitx5](https://fcitx-im.org/) — bộ gõ tiếng Việt |
+| **Apps** | VLC, GIMP, LibreOffice, Flameshot, Nemo, xed |
+| **System** | TLP, Timeshift, Warpinator, Flatpak, DKMS |
+
+> 📖 Chi tiết kiến trúc, cấu trúc thư mục, và cách build → [CONTRIBUTING.md](CONTRIBUTING.md)
+
+### Build ISO
+
+```bash
+sudo apt install live-build debootstrap
+git clone https://github.com/VN-Linux-Family/CaramOS.git
+cd CaramOS && make build
 ```
-+------------------------------------------+
-|            Caram Center                   |
-+----------+----------+--------------------+
-| Ứng dụng | Trò chơi | Ứng dụng Web       |
-+----------+----------+--------------------+
-| Bottles  | Lutris   | Webapp Manager     |
-| (Wine)   | (Wine)   | (PWA)              |
-+----------+----------+--------------------+
-```
 
-| App | Cách cài | Trạng thái |
-|---|---|---|
-| **Zalo** | Snap / PWA | Hoạt động tốt |
-| **Photoshop CS6** | Bottles (Wine) | Hoạt động tốt |
-| **MS Office 2016** | Bottles (Wine) | Cơ bản OK |
-| **Game Windows** | Lutris / Steam Proton | Tuỳ game |
+> 📖 Hướng dẫn đầy đủ (ghi USB, test VM, build .deb) → [CONTRIBUTING.md](CONTRIBUTING.md#build-iso)
 
 ### Đóng góp
 
-Chúng tôi hoan nghênh mọi đóng góp! Xem [CONTRIBUTING.md](CONTRIBUTING.md) để biết thêm chi tiết.
-
-**Cách đóng góp:**
-
-1. Fork repo này
-2. Tạo branch mới (`git checkout -b feature/tinh-nang-moi`)
-3. Commit thay đổi (`git commit -m 'Thêm tính năng mới'`)
-4. Push lên branch (`git push origin feature/tinh-nang-moi`)
-5. Tạo Pull Request
-
-**Bạn có thể giúp:**
-- Báo lỗi và đề xuất tính năng qua [Issues](https://github.com/VN-Linux-Family/CaramOS/issues)
-- Thiết kế wallpaper, icon, theme
-- Test trên nhiều loại máy khác nhau
-- Viết tài liệu hướng dẫn tiếng Việt
-- Dịch thuật
-- Viết script cài app Windows cho Caram Center
+Chúng tôi hoan nghênh mọi đóng góp! Xem [CONTRIBUTING.md](CONTRIBUTING.md) để biết:
+- Kiến trúc dự án & cấu trúc thư mục
+- Cách build ISO & test
+- Quy trình đóng góp code
+- Tiêu chuẩn commit & code
 
 ### Giấy phép
 
@@ -122,7 +119,6 @@ CaramOS là phần mềm **mã nguồn mở** theo giấy phép [GPL-3.0](LICENS
 - [vinceliuice](https://github.com/vinceliuice) — ChromeOS-theme, Tela Circle icons
 - [Bottles](https://usebottles.com/) — Chạy app Windows trên Linux
 - [Lutris](https://lutris.net/) — Chạy game Windows trên Linux
-- [Ollama](https://ollama.com/) — AI offline
 
 ---
 
