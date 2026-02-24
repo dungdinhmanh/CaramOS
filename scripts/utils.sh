@@ -156,13 +156,8 @@ resolve_iso() {
         MINT_ISO="$MINT_ISO_NAME"
         info "Tìm thấy ISO: $MINT_ISO"
     else
-        info "Tải Linux Mint ${MINT_VERSION} ${MINT_EDITION}..."
-        if $HAS_GUM; then
-            gum spin --spinner globe --title "Tải ${MINT_ISO_NAME}..." -- \
-                wget -q "$MINT_MIRROR" -O "$MINT_ISO_NAME"
-        else
-            wget -c "$MINT_MIRROR" -O "$MINT_ISO_NAME"
-        fi
+        info "Tải Linux Mint ${MINT_VERSION} ${MINT_EDITION} (~2.5GB)..."
+        wget --progress=bar:force -c "$MINT_MIRROR" -O "$MINT_ISO_NAME"
         MINT_ISO="$MINT_ISO_NAME"
         ok "Tải xong: $MINT_ISO"
     fi
