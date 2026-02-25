@@ -1,0 +1,24 @@
+#!/bin/bash
+# Script để ép Cinnamon load đúng theme CaramOS, đè lên hardcode của Linux Mint
+sleep 3 # Đợi Desktop load xong
+
+if [ -f "$HOME/.config/caramos-theme-applied" ]; then
+    exit 0
+fi
+
+# Set Interface
+gsettings set org.cinnamon.desktop.interface gtk-theme 'ChromeOS-Light' || true
+gsettings set org.cinnamon.desktop.interface icon-theme 'Tela-circle' || true
+gsettings set org.cinnamon.desktop.interface cursor-theme 'Bibata-Modern-Classic' || true
+gsettings set org.cinnamon.desktop.interface font-name 'Be Vietnam Pro 10' || true
+
+# Set Window Manager
+gsettings set org.cinnamon.desktop.wm.preferences titlebar-font 'Be Vietnam Pro Bold 10' || true
+gsettings set org.cinnamon.theme name 'ChromeOS-Light' || true
+
+# Set Background Wallpaper
+gsettings set org.cinnamon.desktop.background picture-uri 'file:///usr/share/backgrounds/caramos/caramos-light.png' || true
+
+# Lock file 
+mkdir -p "$HOME/.config"
+touch "$HOME/.config/caramos-theme-applied"

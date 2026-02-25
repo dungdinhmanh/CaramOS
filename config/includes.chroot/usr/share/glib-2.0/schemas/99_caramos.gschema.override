@@ -13,7 +13,7 @@ clock-use-24h=true
 titlebar-font='Be Vietnam Pro Bold 10'
 
 [org.cinnamon.desktop.background]
-picture-uri='file:///usr/share/backgrounds/caramos/default.png'
+picture-uri='file:///usr/share/backgrounds/caramos/caramos-light.png'
 picture-options='zoom'
 
 [org.nemo.desktop]

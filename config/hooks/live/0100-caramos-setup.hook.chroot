@@ -55,6 +55,11 @@ echo "[CaramOS] Removing bloatware..."
 apt-get remove -y thunderbird hexchat drawing hypnotix rhythmbox 2>/dev/null || true
 apt-get autoremove -y
 
+echo "[CaramOS] Set permissions for theme applier..."
+if [ -f /usr/bin/caramos-theme-apply ]; then
+    chmod +x /usr/bin/caramos-theme-apply
+fi
+
 echo "[CaramOS] Compiling schemas..."
 glib-compile-schemas /usr/share/glib-2.0/schemas/
 
