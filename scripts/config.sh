@@ -10,3 +10,7 @@ MINT_MIRROR="https://mirrors.kernel.org/linuxmint/stable/${MINT_VERSION}/${MINT_
 CARAMOS_VERSION="0.1"
 OUTPUT_ISO="CaramOS-${CARAMOS_VERSION}-${MINT_EDITION}-amd64.iso"
 WORK_DIR="./build"
+
+# Nén mặc định: lz4 (nhanh, dev). --release sẽ đổi sang xz (nhỏ)
+SQUASHFS_COMP="lz4"
+SQUASHFS_OPTS="-noappend"

@@ -1,12 +1,12 @@
-.PHONY: build clean help
+.PHONY: build release clean help
 
 build:
-	@echo "CaramOS Build — Remaster từ Linux Mint"
-	@echo ""
-	@echo "Usage:"
-	@echo "  sudo ./build.sh                    # Tự tải và build"
-	@echo "  sudo ./build.sh /path/to/mint.iso  # Dùng ISO có sẵn"
+	@echo "CaramOS Build — Dev mode (lz4, nhanh)"
 	sudo ./build.sh $(ISO)
+
+release:
+	@echo "CaramOS Build — Release mode (xz, nhỏ)"
+	sudo ./build.sh --release $(ISO)
 
 clean:
 	sudo ./build.sh --clean
@@ -14,10 +14,8 @@ clean:
 help:
 	@echo "CaramOS Build System (ISO Remaster)"
 	@echo ""
-	@echo "  make build              — Build CaramOS ISO (tự tải Mint ISO)"
-	@echo "  make build ISO=file.iso — Build từ ISO có sẵn"
-	@echo "  make clean              — Xoá build artifacts"
-	@echo "  make help               — Hiển thị trợ giúp"
-	@echo ""
-	@echo "Yêu cầu:"
-	@echo "  sudo apt install squashfs-tools xorriso rsync wget"
+	@echo "  make build                — Dev build (lz4, ~1 phút nén)"
+	@echo "  make release              — Release build (xz, ~10 phút, ISO nhỏ)"
+	@echo "  make build ISO=file.iso   — Build từ ISO có sẵn"
+	@echo "  make clean                — Xoá build (giữ Mint ISO)"
+	@echo "  make help                 — Hiển thị trợ giúp"

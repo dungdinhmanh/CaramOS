@@ -1,6 +1,6 @@
 # Build artifacts
 build/
-*.iso
+CaramOS-*.iso
 *.log
 
 # OS files
