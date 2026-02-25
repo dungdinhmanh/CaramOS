@@ -69,9 +69,27 @@ step_boot_config() {
 
     if [ -n "$GRUB_FILES" ]; then
         info "  → Sửa GRUB config..."
+
+        # Copy banner cho GRUB
+        local BANNER_SRC="$SCRIPT_DIR/caramos_303030.png"
+        if [ -n "$BANNER_SRC" ] && [ -f "$BANNER_SRC" ]; then
+            mkdir -p "$ISO_DIR/boot/grub" 2>/dev/null || true
+            cp "$BANNER_SRC" "$ISO_DIR/boot/grub/splash.png" 2>/dev/null || true
+        fi
+
         echo "$GRUB_FILES" | while IFS= read -r cfg; do
             # Đổi tên distro trong menu entry title — áp dụng mọi mode
             sed -i 's/Linux Mint/CaramOS/gI' "$cfg"
+
+            # Chèn ảnh nền GRUB nếu chưa có
+            if [ -f "$ISO_DIR/boot/grub/splash.png" ]; then
+                if ! grep -q "background_image" "$cfg"; then
+                    # Mồi load module hiển thị đồ hoạ cần thiết cho hình nền
+                    sed -i '1 a\set gfxmode=auto\nset gfxpayload=keep\ninsmod all_video\ninsmod gfxterm\nterminal_output gfxterm\ninsmod png\nset background_image=/boot/grub/splash.png' "$cfg"
+                else
+                    sed -i 's|[a-zA-Z0-9_/.-]*\.png|/boot/grub/splash.png|gI' "$cfg"
+                fi
+            fi
 
             # Chỉ xoá quiet/splash ở debug mode
             if $IS_DEBUG; then
@@ -97,7 +115,7 @@ step_boot_config() {
     #      d) Nếu không file nào có → thêm vào stdmenu.cfg nếu tồn tại,
     #         không thì thêm vào isolinux.cfg (fallback cuối cùng)
     # ----------------------------------------------------------------
-    local BANNER_SRC="$SCRIPT_DIR/caramos_vietnam_banner.png"
+    local BANNER_SRC="$SCRIPT_DIR/caramos_303030.png"
     local ISOLINUX_DIR
     ISOLINUX_DIR=$(find "$ISO_DIR" -maxdepth 3 -name "isolinux.bin" \
         -exec dirname {} \; 2>/dev/null | head -1)
