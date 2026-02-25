@@ -33,7 +33,7 @@ jobs:
           key: mint-iso-22.3-cinnamon
 
       - name: Build CaramOS ISO
-        run: sudo ./build.sh
+        run: sudo -E ./build.sh
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
