@@ -93,10 +93,51 @@ sudo dd if=CaramOS.iso of=/dev/sdX bs=4M status=progress
 
 ### Build ISO
 
+Cài dependency build trên Ubuntu/Mint/Debian:
+
 ```bash
-sudo apt install squashfs-tools xorriso rsync wget
-git clone https://github.com/VN-Linux-Family/CaramOS.git
-cd CaramOS && sudo ./build.sh    # Tự tải Mint ISO + remaster + ra CaramOS.iso
+sudo apt install squashfs-tools xorriso rsync wget curl isolinux syslinux-common
+```
+
+Clone repo và build nhanh bản dev:
+
+```bash
+git clone git@github.com:VN-Linux-Family/CaramOS.git
+cd CaramOS
+make build
+```
+
+Các target `make` thường dùng:
+
+| Lệnh | Mục đích |
+|---|---|
+| `make build` | Build dev đầy đủ, nén `lz4` để test nhanh |
+| `make release` | Build bản release, nén `xz` nhỏ hơn nhưng lâu hơn |
+| `make prepare` | Bung ISO/rootfs ra `build/` để sửa và test nhanh |
+| `make customize-only` | Chạy packages, overlay và hooks trong rootfs |
+| `make boot-only` | Chỉ áp dụng boot menu, GRUB và Plymouth branding |
+| `make overlay` | Chỉ copy `config/includes.chroot` vào rootfs |
+| `make quick` | Prepare nếu cần, overlay, repack squashfs và ISO |
+| `make repack` | Đóng gói lại squashfs và ISO từ work tree hiện có |
+| `make iso-only` | Chỉ tạo lại ISO từ `build/custom` |
+| `make shell` | Vào chroot `build/squashfs` để debug thủ công |
+| `make debug-iso` | In trạng thái boot menu/Plymouth để kiểm tra |
+| `make clean` | Dọn toàn bộ build/cache/output ISO |
+| `make docker-build` | Build dev trong Docker |
+| `make docker-release` | Build release trong Docker |
+
+Ví dụ workflow sửa nhanh boot splash:
+
+```bash
+make boot-only
+make iso-only
+```
+
+Ví dụ workflow sửa overlay/theme/app config:
+
+```bash
+make customize-only
+make quick
 ```
 
 > 📖 Hướng dẫn đầy đủ (ghi USB, test VM, build .deb) → [CONTRIBUTING.md](CONTRIBUTING.md#build-iso)
