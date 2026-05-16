@@ -86,6 +86,55 @@ Caram Center is CaramOS's signature application that routes users to the right e
 | **Backup** | Timeshift |
 | **Updates** | mintupdate |
 
+### Build ISO
+
+Install build dependencies on Ubuntu/Mint/Debian:
+
+```bash
+sudo apt install squashfs-tools xorriso rsync wget curl isolinux syslinux-common
+```
+
+Clone the repository and run a dev build:
+
+```bash
+git clone git@github.com:VN-Linux-Family/CaramOS.git
+cd CaramOS
+make build
+```
+
+Common `make` targets:
+
+| Command | Purpose |
+|---|---|
+| `make build` | Full dev build with fast `lz4` compression |
+| `make release` | Release build with smaller but slower `xz` compression |
+| `make prepare` | Extract the ISO/rootfs into `build/` for fast iteration |
+| `make customize-only` | Run package installation, overlay copy, and chroot hooks |
+| `make boot-only` | Apply only boot menu, GRUB, and Plymouth branding |
+| `make overlay` | Copy only `config/includes.chroot` into the rootfs |
+| `make quick` | Prepare if needed, overlay, then repack squashfs and ISO |
+| `make repack` | Repack squashfs and ISO from the existing work tree |
+| `make iso-only` | Recreate only the ISO from `build/custom` |
+| `make shell` | Enter the `build/squashfs` chroot for manual debugging |
+| `make debug-iso` | Print boot menu/Plymouth diagnostics |
+| `make clean` | Remove build/cache/output ISO artifacts |
+| `make docker-build` | Run a dev build inside Docker |
+| `make docker-release` | Run a release build inside Docker |
+
+Fast boot splash iteration:
+
+```bash
+make boot-only
+make iso-only
+```
+
+Fast overlay/theme/app configuration iteration:
+
+```bash
+make customize-only
+make quick
+```
+
 ### Contributing
 
 We welcome contributions! See [CONTRIBUTING_EN.md](CONTRIBUTING_EN.md) for guidelines.

@@ -11,7 +11,14 @@ NC='\033[0m'
 HAS_GUM=false
 command -v gum &>/dev/null && HAS_GUM=true
 
-# --- Logging ---
+APT_LOCK_TIMEOUT="${APT_LOCK_TIMEOUT:-600}"
+APT_GET=(apt-get -o DPkg::Lock::Timeout="${APT_LOCK_TIMEOUT}")
+
+preseed_noninteractive_packages() {
+    export DEBIAN_FRONTEND=noninteractive
+    echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections 2>/dev/null || true
+    echo "ttf-mscorefonts-installer msttcorefonts/present-mscorefonts-eula note" | debconf-set-selections 2>/dev/null || true
+}
 info()  {
     if $HAS_GUM; then
         gum log --level info "$1"
@@ -127,9 +134,10 @@ install_deps() {
         command -v "$cmd" &>/dev/null || MISSING="yes"
     done
     if [ -n "$MISSING" ]; then
+        preseed_noninteractive_packages
         info "Cài công cụ build..."
-        apt-get update -qq
-        apt-get install -y $DEPS
+        "${APT_GET[@]}" update -qq
+        "${APT_GET[@]}" install -y $DEPS
         ok "Đã cài xong công cụ."
     fi
 }
@@ -145,8 +153,8 @@ install_gum() {
         curl -fsSL https://repo.charm.sh/apt/gpg.key | gpg --dearmor -o /etc/apt/keyrings/charm.gpg
         echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" \
             > /etc/apt/sources.list.d/charm.list
-        apt-get update -qq
-        apt-get install -y gum
+        "${APT_GET[@]}" update -qq
+        "${APT_GET[@]}" install -y gum
         HAS_GUM=true
         ok "Đã cài gum."
     fi
@@ -165,4 +173,62 @@ resolve_iso() {
         MINT_ISO="$MINT_ISO_NAME"
         ok "Tải xong: $MINT_ISO"
     fi
+}
+
+ensure_work_tree() {
+    if [ ! -d "$WORK_DIR/squashfs" ] || [ ! -d "$WORK_DIR/custom" ]; then
+        warn "Chưa có work tree. Đang prepare trước..."
+        step_extract
+    fi
+}
+
+mount_chroot() {
+    ensure_work_tree
+
+    mountpoint -q "$WORK_DIR/squashfs/dev" || mount --bind /dev "$WORK_DIR/squashfs/dev"
+    mountpoint -q "$WORK_DIR/squashfs/dev/pts" || mount --bind /dev/pts "$WORK_DIR/squashfs/dev/pts"
+    mountpoint -q "$WORK_DIR/squashfs/proc" || mount -t proc proc "$WORK_DIR/squashfs/proc"
+    mountpoint -q "$WORK_DIR/squashfs/sys" || mount -t sysfs sysfs "$WORK_DIR/squashfs/sys"
+
+    # Mint/Ubuntu thường để /etc/resolv.conf là symlink tới systemd-resolved.
+    # Trong chroot symlink này có thể dangling, cp sẽ lỗi "not writing through
+    # dangling symlink". Xoá link trước rồi copy file thật từ host vào.
+    rm -f "$WORK_DIR/squashfs/etc/resolv.conf"
+    cp /etc/resolv.conf "$WORK_DIR/squashfs/etc/resolv.conf"
+}
+
+umount_chroot() {
+    sync 2>/dev/null || true
+    umount "$WORK_DIR/squashfs/proc"    2>/dev/null || umount -lf "$WORK_DIR/squashfs/proc"    2>/dev/null || true
+    umount "$WORK_DIR/squashfs/sys"     2>/dev/null || umount -lf "$WORK_DIR/squashfs/sys"     2>/dev/null || true
+    umount "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || umount -lf "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || true
+    umount "$WORK_DIR/squashfs/dev"     2>/dev/null || umount -lf "$WORK_DIR/squashfs/dev"     2>/dev/null || true
+}
+
+safe_remove_work_dirs() {
+    sync 2>/dev/null || true
+    umount_chroot
+    umount "$WORK_DIR/mnt" 2>/dev/null || true
+
+    if grep -q " $WORK_DIR/squashfs/" /proc/mounts 2>/dev/null; then
+        error "Vẫn còn mount trong $WORK_DIR/squashfs — bỏ qua xoá để bảo vệ host. Chạy: sudo umount -Rlf $WORK_DIR/squashfs"
+    fi
+
+    rm -rf "$WORK_DIR/squashfs" "$WORK_DIR/custom" "$WORK_DIR/mnt" 2>/dev/null || true
+}
+
+print_dev_help() {
+    cat <<EOF
+CaramOS Dev Build Modes:
+  sudo ./build.sh --prepare        Tạo build/squashfs + build/custom, giữ để sửa nhanh
+  sudo ./build.sh --boot-only      Chỉ áp dụng boot config/branding
+  sudo ./build.sh --overlay-only   Chỉ copy config/includes.chroot vào rootfs
+  sudo ./build.sh --customize-only Chạy apt/packages + overlay + hooks trên rootfs hiện có
+  sudo ./build.sh --shell          Vào chroot build/squashfs để test/sửa thủ công
+  sudo ./build.sh --repack-only    Đóng lại filesystem.squashfs + ISO, giữ work tree
+  sudo ./build.sh --iso-only       Chỉ tạo lại ISO từ build/custom
+  sudo ./build.sh --quick          Prepare nếu cần → overlay-only → repack-only
+  sudo ./build.sh --clean-work     Xoá work tree, giữ cache
+  sudo ./build.sh --clean-cache    Xoá toàn bộ build cache/work tree
+EOF
 }

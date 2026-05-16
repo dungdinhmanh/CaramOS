@@ -1,4 +1,4 @@
-.PHONY: build release clean docker-build docker-release docker-clean help
+.PHONY: build release clean clean-work clean-cache prepare boot-only overlay customize-only shell repack iso-only quick debug-iso docker-build docker-release docker-clean help
 
 build:
 	@echo "CaramOS Build — Dev mode (lz4, nhanh)"
@@ -8,17 +8,74 @@ release:
 	@echo "CaramOS Build — Release mode (xz, nhỏ)"
 	sudo ./build.sh --release $(ISO)
 
+prepare:
+	@echo "CaramOS Prepare — tạo work tree để sửa/test nhanh"
+	sudo ./build.sh --prepare $(ISO)
+
+boot-only:
+	@echo "CaramOS Boot Config — chỉ áp dụng boot branding/debug"
+	sudo ./build.sh --boot-only $(ISO)
+
+overlay:
+	@echo "CaramOS Overlay — copy includes.chroot vào rootfs"
+	sudo ./build.sh --overlay-only $(ISO)
+
+customize-only:
+	@echo "CaramOS Customize — chạy packages + overlay + hooks"
+	sudo ./build.sh --customize-only $(ISO)
+
+shell:
+	@echo "CaramOS Shell — vào chroot build/squashfs"
+	sudo ./build.sh --shell $(ISO)
+
+repack:
+	@echo "CaramOS Repack — tạo lại squashfs + ISO, giữ work tree"
+	sudo ./build.sh --repack-only $(ISO)
+
+iso-only:
+	@echo "CaramOS ISO Only — chỉ tạo lại ISO từ build/custom"
+	sudo ./build.sh --iso-only $(ISO)
+
+quick:
+	@echo "CaramOS Quick — prepare nếu cần, overlay + repack"
+	sudo ./build.sh --quick $(ISO)
+
+debug-iso:
+	@echo "CaramOS Debug ISO — kiểm tra boot menu/Plymouth"
+	bash ./scripts/debug_iso.sh $(or $(ISO),CaramOS-0.1-cinnamon-amd64.iso)
+
 clean:
 	sudo ./build.sh --clean
+
+clean-work:
+	sudo ./build.sh --clean-work
+
+clean-cache:
+	sudo ./build.sh --clean-cache
 
 help:
 	@echo "CaramOS Build System (ISO Remaster)"
 	@echo ""
 	@echo "--- Local Build (Chỉ Ubuntu/Mint/Debian) ---"
-	@echo "  make build                — Dev build (lz4, ~1 phút nén)"
+	@echo "  make build                — Full dev build (lz4), giống hành vi cũ"
 	@echo "  make release              — Release build (xz, ~10 phút, ISO nhỏ)"
-	@echo "  make clean                — Xoá build (giữ Mint ISO)"
+	@echo "  make clean                — Xoá build/cache/output ISO (giữ Mint ISO)"
 	@echo "  Yêu cầu: sudo apt install squashfs-tools xorriso rsync wget curl isolinux"
+	@echo ""
+	@echo "--- Fast Iteration ---"
+	@echo "  make prepare              — Tạo build/squashfs + build/custom để sửa nhanh"
+	@echo "  make overlay              — Chỉ copy config/includes.chroot vào rootfs"
+	@echo "  make quick                — Prepare nếu cần → overlay → repack squashfs + ISO"
+	@echo "  make repack               — Repack squashfs + ISO từ work tree hiện có"
+	@echo "  make iso-only             — Chỉ tạo lại ISO, dùng khi sửa build/custom/boot"
+	@echo "  make shell                — Vào chroot build/squashfs để test/sửa thủ công"
+	@echo "  make boot-only            — Chỉ áp dụng boot config/branding"
+	@echo "  make customize-only       — Chạy packages + overlay + hooks"
+	@echo "  make clean-work           — Xoá work tree, giữ cache extract"
+	@echo "  make clean-cache          — Xoá cache extract/work tree"
+	@echo "  make debug-iso            — In trạng thái boot menu/Plymouth để debug"
+	@echo ""
+	@echo "Workflow nhanh: make quick → test ISO → sửa config/includes.chroot → make quick"
 	@echo ""
 	@echo "--- Docker Build (Mọi distro/macOS/Windows) ---"
 	@echo "  make docker-build         — Dev build trong Docker"

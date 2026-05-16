@@ -1,9 +1,7 @@
 #!/bin/bash
 # Bước 7: Đóng gói squashfs + ISO
 
-step_repack() {
-    info "[7/7] Đóng gói ISO..."
-
+clean_virtual_dirs() {
     local SFS="$WORK_DIR/squashfs"
 
     # Đảm bảo các virtual fs dir trống sạch trước khi pack vào squashfs.
@@ -20,16 +18,37 @@ step_repack() {
             mkdir -p "$SFS/$dir"
         fi
     done
+}
 
-    # Rebuild squashfs
+step_repack_squashfs() {
+    ensure_work_tree
+    umount_chroot
+    clean_virtual_dirs
+
     info "  → Tạo filesystem.squashfs (${SQUASHFS_COMP})..."
-    mksquashfs "$SFS" "$WORK_DIR/custom/casper/filesystem.squashfs" \
+    mksquashfs "$WORK_DIR/squashfs" "$WORK_DIR/custom/casper/filesystem.squashfs" \
         -comp $SQUASHFS_COMP $SQUASHFS_OPTS
     ok "squashfs xong."
 
     # Cập nhật filesystem.size
     printf '%s' "$(du -sx --block-size=1 "$WORK_DIR/squashfs" | cut -f1)" \
         > "$WORK_DIR/custom/casper/filesystem.size"
+
+    # Live ISO boot dùng build/custom/casper/initrd.lz, KHÔNG tự dùng file
+    # /boot/initrd.img-* trong squashfs. Hook Plymouth đã regenerate initramfs
+    # trong rootfs, nên phải copy file mới này ra casper/initrd.lz.
+    local latest_initrd
+    latest_initrd=$(ls -1t "$WORK_DIR"/squashfs/boot/initrd.img-* 2>/dev/null | head -1 || true)
+    if [ -n "$latest_initrd" ] && [ -f "$latest_initrd" ]; then
+        cp "$latest_initrd" "$WORK_DIR/custom/casper/initrd.lz"
+        ok "live initrd đã cập nhật: $(basename "$latest_initrd") → casper/initrd.lz"
+    else
+        warn "không tìm thấy initrd.img-* trong rootfs để cập nhật casper/initrd.lz"
+    fi
+}
+
+step_repack_iso() {
+    ensure_work_tree
 
     # Cập nhật md5sum
     cd "$WORK_DIR/custom"
@@ -91,12 +110,15 @@ step_repack() {
     xorriso "${XORRISO_ARGS[@]}"
 
     cd "$SCRIPT_DIR"
+}
 
-    # Dọn working dirs (giữ cache)
-    sync
-    umount "$WORK_DIR/squashfs/proc"    2>/dev/null || true
-    umount "$WORK_DIR/squashfs/sys"     2>/dev/null || true
-    umount "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || true
-    umount "$WORK_DIR/squashfs/dev"     2>/dev/null || true
-    rm -rf "$WORK_DIR/squashfs" "$WORK_DIR/custom" "$WORK_DIR/mnt" 2>/dev/null || true
+step_repack() {
+    info "[7/7] Đóng gói ISO..."
+    step_repack_squashfs
+    step_repack_iso
+}
+
+step_repack_and_clean() {
+    step_repack
+    safe_remove_work_dirs
 }

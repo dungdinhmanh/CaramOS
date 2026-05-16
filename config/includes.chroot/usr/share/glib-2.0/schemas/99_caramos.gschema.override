@@ -1,36 +1,93 @@
-# CaramOS - System-wide Cinnamon defaults (ChromeOS layout)
-# Applied to all users, users can override in Settings
+# CaramOS - System-wide desktop defaults
+# Applied to all users. Users can still override from Settings.
+
+[x.dm.slick-greeter]
+theme-name='CaramOS-Light'
+icon-theme-name='Tela-circle'
+font-name='Be Vietnam Pro 11'
+background='/usr/share/backgrounds/caramos/default.png'
+draw-user-backgrounds=false
+cursor-theme-name='Bibata-Modern-Classic'
+cursor-theme-size=24
+
+[org.cinnamon]
+panel-scale-text-icons=true
+workspace-expo-view-as-grid=true
+app-menu-icon-name='caramos-logo-symbolic'
+system-icon='caramos-logo-symbolic'
+favorite-apps=['google-chrome.desktop', 'wps-office-wps.desktop', 'wps-office-et.desktop', 'wps-office-wpp.desktop', 'nemo.desktop', 'cinnamon-settings.desktop', 'org.gnome.Terminal.desktop']
+
+[org.cinnamon.theme]
+name='CaramOS-Light'
 
 [org.cinnamon.desktop.interface]
+gtk-key-theme='Default'
 gtk-theme='ChromeOS-Light'
 icon-theme='Tela-circle'
 cursor-theme='Bibata-Modern-Classic'
 font-name='Be Vietnam Pro 10'
+menus-have-icons=true
 clock-show-date=true
 clock-use-24h=true
 
 [org.cinnamon.desktop.wm.preferences]
+theme='ChromeOS-Light'
 titlebar-font='Be Vietnam Pro Bold 10'
+titlebar-uses-system-font=false
 button-layout=':minimize,maximize,close'
 
-[org.cinnamon.theme]
-name='ChromeOS-Light'
-
 [org.cinnamon.desktop.background]
-picture-uri='file:///usr/share/backgrounds/caramos/caramos-light.png'
+primary-color='#080706'
+secondary-color='#20120a'
+color-shading-type='solid'
+picture-uri='file:///usr/share/backgrounds/caramos/default.png'
 picture-options='zoom'
 
-[org.cinnamon]
-panels-enabled=['1:0:top']
-panels-autohide=['1:intel']
-panels-height=['1:28']
+[org.gnome.desktop.interface]
+gtk-theme='ChromeOS-Light'
+icon-theme='Tela-circle'
+cursor-theme='Bibata-Modern-Classic'
+font-name='Be Vietnam Pro 10'
+document-font-name='Be Vietnam Pro 10'
+monospace-font-name='DejaVu Sans Mono 10'
+
+[org.gnome.desktop.wm.preferences]
+theme='ChromeOS-Light'
+titlebar-font='Be Vietnam Pro Bold 10'
+titlebar-uses-system-font=false
+button-layout=':minimize,maximize,close'
+
+[org.gnome.desktop.background]
+primary-color='#080706'
+secondary-color='#20120a'
+color-shading-type='solid'
+picture-uri='file:///usr/share/backgrounds/caramos/default.png'
+picture-options='zoom'
+show-desktop-icons=false
+
+[org.mate.interface]
+gtk-theme='ChromeOS-Light'
+icon-theme='Tela-circle'
+font-name='Be Vietnam Pro 10'
+
+[org.mate.background]
+picture-filename='/usr/share/backgrounds/caramos/default.png'
+picture-options='zoom'
+primary-color='#080706'
+secondary-color='#20120a'
 
 [org.nemo.desktop]
 computer-icon-visible=false
 home-icon-visible=false
 trash-icon-visible=false
 network-icon-visible=false
-volumes-visible=false
+volumes-visible=true
+font='Be Vietnam Pro 10'
+
+[org.nemo.preferences]
+show-hidden-files=false
+default-folder-viewer='icon-view'
+thumbnail-limit=34359738368
 
 [org.cinnamon.desktop.peripherals.touchpad]
 tap-to-click=true
@@ -45,10 +102,9 @@ lid-close-battery-action='suspend'
 [org.cinnamon.desktop.screensaver]
 lock-enabled=true
 lock-delay=uint32 300
-
-[org.nemo.preferences]
-show-hidden-files=false
-default-folder-viewer='icon-view'
+font-date='Be Vietnam Pro 24'
+font-message='Be Vietnam Pro 14'
+font-time='Be Vietnam Pro 64'
 
 [org.cinnamon.desktop.default-applications.terminal]
 exec='gnome-terminal'

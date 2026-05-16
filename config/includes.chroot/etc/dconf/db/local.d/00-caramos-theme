@@ -1,0 +1,27 @@
+[org/cinnamon]
+app-menu-icon-name='caramos-logo-symbolic'
+system-icon='caramos-logo-symbolic'
+
+[org/cinnamon/theme]
+name='CaramOS-Light'
+
+[org/cinnamon/desktop/interface]
+gtk-theme='ChromeOS-Light'
+icon-theme='Tela-circle'
+cursor-theme='Bibata-Modern-Classic'
+font-name='Be Vietnam Pro 10'
+
+[org/cinnamon/desktop/wm/preferences]
+theme='ChromeOS-Light'
+
+[org/gnome/desktop/interface]
+gtk-theme='ChromeOS-Light'
+icon-theme='Tela-circle'
+cursor-theme='Bibata-Modern-Classic'
+font-name='Be Vietnam Pro 10'
+
+[org/gnome/desktop/wm/preferences]
+theme='ChromeOS-Light'
+
+[org/cinnamon/applets/grouped-window-list]
+pinned-apps=['google-chrome.desktop','wps-office-wps.desktop','wps-office-et.desktop','wps-office-wpp.desktop','nemo.desktop','org.gnome.Terminal.desktop']

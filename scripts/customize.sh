@@ -1,14 +1,24 @@
 #!/bin/bash
 # Bước 4-6: Chroot + tuỳ biến + dọn dẹp
 
+cleanup_chroot_package_state() {
+    info "  → Dọn trạng thái apt/dpkg cũ trong chroot..."
+    chroot "$WORK_DIR/squashfs" /bin/bash -c '
+        export DEBIAN_FRONTEND=noninteractive
+        mkdir -p /usr/share/package-data-downloads.disabled
+        if [ -d /usr/share/package-data-downloads ]; then
+            find /usr/share/package-data-downloads -maxdepth 1 -type f -exec mv -f {} /usr/share/package-data-downloads.disabled/ \; 2>/dev/null || true
+        fi
+        rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock 2>/dev/null || true
+        timeout 60 dpkg --configure -a --force-confdef --force-confold >/dev/null 2>&1 || true
+    '
+}
+
 step_customize() {
     # --- Mount chroot ---
     info "[4/7] Mount chroot..."
-    mount --bind /dev     "$WORK_DIR/squashfs/dev"
-    mount --bind /dev/pts "$WORK_DIR/squashfs/dev/pts"
-    mount -t proc proc    "$WORK_DIR/squashfs/proc"
-    mount -t sysfs sysfs  "$WORK_DIR/squashfs/sys"
-    cp /etc/resolv.conf   "$WORK_DIR/squashfs/etc/resolv.conf"
+    mount_chroot
+    cleanup_chroot_package_state
 
     # --- Tuỳ biến ---
     info "[5/7] Tuỳ biến CaramOS..."
@@ -19,23 +29,22 @@ step_customize() {
         cp "$SCRIPT_DIR/config/packages.txt" "$WORK_DIR/squashfs/tmp/packages.txt"
         chroot "$WORK_DIR/squashfs" /bin/bash -c '
             export DEBIAN_FRONTEND=noninteractive
+            APT_LOCK_TIMEOUT="${APT_LOCK_TIMEOUT:-600}"
+            echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections || true
+            echo "ttf-mscorefonts-installer msttcorefonts/present-mscorefonts-eula note" | debconf-set-selections || true
             # Đổi sang mirror VN (BizFly Cloud) trước khi apt-get update
             # archive.ubuntu.com đặt ở US/EU, tốc độ ~150kB/s từ VN — mirror VN đạt ~5-15MB/s
             sed -i "s|http://archive.ubuntu.com/ubuntu|http://mirror.bizflycloud.vn/ubuntu|g" /etc/apt/sources.list
             sed -i "s|http://security.ubuntu.com/ubuntu|http://mirror.bizflycloud.vn/ubuntu|g"  /etc/apt/sources.list
-            apt-get update
-            grep -v "^#" /tmp/packages.txt | grep -v "^$" | xargs apt-get install -y
+            apt-get -o DPkg::Lock::Timeout="$APT_LOCK_TIMEOUT" update
+            grep -v "^#" /tmp/packages.txt | grep -v "^$" | xargs apt-get -o DPkg::Lock::Timeout="$APT_LOCK_TIMEOUT" install -y
             rm /tmp/packages.txt
         '
         ok "Cài packages xong."
     fi
 
     # Copy overlay
-    if [ -d "$SCRIPT_DIR/config/includes.chroot" ]; then
-        info "  → Copy overlay files..."
-        cp -a "$SCRIPT_DIR/config/includes.chroot/"* "$WORK_DIR/squashfs/"
-        ok "Copy overlay xong."
-    fi
+    step_overlay
 
     # Chạy hooks
     for hook in "$SCRIPT_DIR/config/hooks/live/"*.hook.chroot; do
@@ -45,6 +54,9 @@ step_customize() {
             cp "$hook" "$WORK_DIR/squashfs/tmp/$hook_name"
             chroot "$WORK_DIR/squashfs" /bin/bash "/tmp/$hook_name"
             rm -f "$WORK_DIR/squashfs/tmp/$hook_name"
+            if [ "$hook_name" = "0100-caramos-setup.hook.chroot" ] && [ ! -f "$WORK_DIR/squashfs/etc/caramos-customized" ]; then
+                error "Hook $hook_name không tạo /etc/caramos-customized; dừng để tránh repack rootfs cũ."
+            fi
             ok "Hook $hook_name xong."
         fi
     done
@@ -52,14 +64,10 @@ step_customize() {
     # --- Dọn dẹp chroot ---
     info "[6/7] Dọn dẹp chroot..."
     chroot "$WORK_DIR/squashfs" /bin/bash -c '
-        apt-get clean
+        APT_LOCK_TIMEOUT="${APT_LOCK_TIMEOUT:-600}"
+        apt-get -o DPkg::Lock::Timeout="$APT_LOCK_TIMEOUT" clean
         rm -rf /tmp/* /var/tmp/*
         rm -f /etc/resolv.conf
     '
-    # Unmount theo thứ tự (innermost trước) — KHÔNG lazy để tránh xoá /dev host
-    sync
-    umount "$WORK_DIR/squashfs/proc"    2>/dev/null || umount -lf "$WORK_DIR/squashfs/proc"    2>/dev/null || true
-    umount "$WORK_DIR/squashfs/sys"     2>/dev/null || umount -lf "$WORK_DIR/squashfs/sys"     2>/dev/null || true
-    umount "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || umount -lf "$WORK_DIR/squashfs/dev/pts" 2>/dev/null || true
-    umount "$WORK_DIR/squashfs/dev"     2>/dev/null || umount -lf "$WORK_DIR/squashfs/dev"     2>/dev/null || true
+    umount_chroot
 }
